@@ -51,7 +51,6 @@ const StreamPlot = ({ data, layout: propsLayout, size }: Props) => {
       }}
       useResizeHandler={true}
       onClick={(e) => {
-        console.log('onClick', e);
         e.event.stopImmediatePropagation();
       }}
     />

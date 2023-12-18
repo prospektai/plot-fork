@@ -24,7 +24,6 @@ class WebRawHID implements WebUsbComInterface {
       }
     };
     this.port.addEventListener('inputreport', this.receiveCallback);
-    console.log(this.port);
   }
   setCloseCallback(closeHandler: CloseHandler) {
     this.closeCallback = closeHandler;

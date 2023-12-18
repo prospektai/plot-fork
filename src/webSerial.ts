@@ -41,6 +41,7 @@ class WebSerial implements WebUsbComInterface {
 
     try {
       await this.port.open({ baudRate: param.baudrate, bufferSize: 81920 });
+      console.log('open serial port');
     } catch (e) {
       await this.port.close();
       return Promise.reject(e);
@@ -55,7 +56,6 @@ class WebSerial implements WebUsbComInterface {
     await this.startReadLoop();
 
     this.writable = this.port.writable;
-    console.log('open serial port');
   }
 
   private async startReadLoop() {
