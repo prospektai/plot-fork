@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { PlotArea } from './PlotArea/PlotArea';
 
@@ -14,9 +14,10 @@ type Props = {
   labels: string[];
 };
 
-const PlotCollection = ({ dct, labels: propsLabels }: Props) => {
+// const PlotCollection = ({ dct, labels: propsLabels }: Props) => {
+  const PlotCollection = ({ dct }: Props) => {
   const [plotIdx] = useState([0, 1, 2, 3, 4, 5]);
-  const [labels, setLabels] = 
+  const [labels,] = 
     useState<string[]>(['Current1', 'Current2', 'Current3', 'Current4', 'Current5', 'Current6']);
   const [buttonPos, setButtonPos] = useState<ButtonPosType>({'Current1': 0});
 

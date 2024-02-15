@@ -82,7 +82,8 @@ const PlotArea = ({ plotData, labels, position, onDrag, title }: Props) => {
         </Grid>
       </Grid>
       <StreamPlot
-        data={plotData}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data={plotData as unknown as any}
         layout={trace.layout}
         size={{
           width: `${rnd.width - 10}px`,
