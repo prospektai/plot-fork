@@ -19,6 +19,7 @@
     "plotly.js": "^2.27.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.50.1",
     "react-plotly.js": "^2.6.0",
     "react-rnd": "^10.4.1",
     "use-interval": "^1.4.0"

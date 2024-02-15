@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { PlotData, TraceData, TraceDataY } from '../types/global';
 
 type Props = {
-  data: PlotData[];
+  data: PlotData;
   labels: string[];
   onUpdate: (arg0: TraceData) => void;
   plots: TraceDataY[];

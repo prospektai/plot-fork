@@ -14,8 +14,11 @@ const grayMain = alpha(grayBase, 0.7);
 const blackBase = '#000000de';
 const blackMain = alpha(blackBase, 0.7);
 
+const plotCount = 6;
+
 const App = () => {
-  const [plotData, setPlotData] = useState<PlotData[]>([]);
+  const [plotData, setPlotData] = useState<PlotData[]>(Array.from({length: plotCount}, () => [{x: [0.3, 2], y: [-1, 5.3]}] as unknown as PlotData));
+  // TODO: multiple plots
 
   const theme = createTheme({
     palette: {

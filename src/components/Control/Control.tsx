@@ -6,6 +6,7 @@ import { Grid, IconButton, Tooltip, styled } from '@mui/material';
 import HelpIcon from '@mui/icons-material/Help';
 import { ControlInputs } from './ControlInputs';
 import { PlotData } from '../../types/global';
+import { SerialSender } from '../SerialSender';
 
 type Props = {
   updatePlotData: (newData: { x: number; y: number }, shouldAddNew: boolean) => void;
@@ -25,6 +26,9 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
   const [baudrate, setBaudrate] = useState('9600');
   const [connected, setConnected] = useState(false);
 
+  // Is running command
+  const [running, setRunning] = useState(false);
+
   const plotDataIndex = useRef(0);
   const hashtagInLine = useRef(true);
   const searchForBEGIN = useRef(true);
@@ -40,10 +44,19 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
   };
 
   const dataReceiveHandler = (msg: Uint8Array) => {
+    // TODO: rewrite this piece of shit to handle multiple plots at once
+    // god help me
     const receivedLine = new TextDecoder().decode(msg).replaceAll('\r', '');
 
     let checkIfAdd = false;
     let lastLineId = streamData.current.length - 1;
+
+    if (streamData.current.length !== 0 && 
+      (receivedLine.includes('#JOB DONE') || streamData.current[lastLineId].includes('#JOB DONE'))) {
+      console.log("JOB DONE SIGNAL RECEIVED");
+      setRunning(false);
+      // return;
+    }
 
     if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('#E(V), I(uA)')) {
       hashtagInLine.current = false;
@@ -261,6 +274,10 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
     document.body.removeChild(a);
   };
 
+  // useEffect(() => {
+  //   console.log(running);
+  // }, [running])
+
   return (
     <div>
       <Grid style={{ width: '650px' }} container spacing={1}>
@@ -279,12 +296,13 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           </HelpTooltip>
         </Grid>
       </Grid>
-      {/* Output text | SEND is hidden: */}
-      {/* <SerialSender
+      <SerialSender
+        running={running}
+        setRunning={setRunning}
         sender={async (value: string) => {
           await com?.writeString(value.concat('\n'));
         }}
-      /> */}
+      />
     </div>
   );
 };

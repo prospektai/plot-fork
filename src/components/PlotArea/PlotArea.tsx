@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Rnd } from 'react-rnd';
-import { Grid } from '@mui/material';
+import { Grid, Typography } from '@mui/material';
 
 import { StreamPlot } from './StreamPlot';
 import { Settings } from './Settings';
@@ -8,16 +8,17 @@ import { Settings } from './Settings';
 import { PlotData, TraceData, OnDragType } from '../../types/global';
 
 type Props = {
-  plotData: PlotData[];
+  plotData: PlotData;
   position: {
     x: number;
     y: number;
   };
   onDrag: ({ x, y }: OnDragType) => void;
-  labels: string[];
+  labels: string[],
+  title?: string
 };
 
-const PlotArea = ({ plotData, labels, position, onDrag }: Props) => {
+const PlotArea = ({ plotData, labels, position, onDrag, title }: Props) => {
   const [trace, setTrace] = useState<TraceData>({
     data: [],
     layout: {
@@ -30,8 +31,8 @@ const PlotArea = ({ plotData, labels, position, onDrag }: Props) => {
   });
 
   const [rnd, setRnd] = useState({
-    height: window.innerHeight - 140,
-    width: window.innerWidth - 30,
+    height: (window.innerHeight - 140) / 2,
+    width: (window.innerWidth - 30) / 3,
     x: position.x,
     y: position.y,
   });
@@ -41,8 +42,8 @@ const PlotArea = ({ plotData, labels, position, onDrag }: Props) => {
       setRnd((prev) => {
         return {
           ...prev,
-          height: window.innerHeight - 140,
-          width: window.innerWidth - 30,
+          height: (window.innerHeight - 140) / 2,
+          width: (window.innerWidth - 30) / 3,
         };
       });
     };
@@ -73,8 +74,11 @@ const PlotArea = ({ plotData, labels, position, onDrag }: Props) => {
       }}
     >
       <Grid container spacing={0} className="dragHandle" style={{ background: '#eee', justifyContent: 'flex-end' }}>
-        <Grid item xs={12}>
+        <Grid item xs={6}>
           <Settings labels={labels} plotData={plotData} setTrace={setTrace} trace={trace} />
+        </Grid>
+        <Grid item xs={6}>
+          <Typography component="h6">{title}</Typography>
         </Grid>
       </Grid>
       <StreamPlot

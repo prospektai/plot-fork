@@ -25,13 +25,17 @@ export type TraceData = {
     | Record<string, never>;
 };
 
+export type PlotYData = Array<number[]>;
+
 export type PlotData = {
   x: number[];
   y: number[];
+  // y: PlotYData;
   type: 'scatter';
   mode: 'lines';
   name: string;
 };
+
 
 export type OnDragType = {
   x: number;
