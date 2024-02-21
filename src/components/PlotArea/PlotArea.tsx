@@ -8,7 +8,7 @@ import { Settings } from './Settings';
 import { PlotData, TraceData, OnDragType } from '../../types/global';
 
 type Props = {
-  plotData: PlotData;
+  plotData: PlotData[];
   position: {
     x: number;
     y: number;
@@ -82,8 +82,7 @@ const PlotArea = ({ plotData, labels, position, onDrag, title }: Props) => {
         </Grid>
       </Grid>
       <StreamPlot
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data={plotData as unknown as any}
+        data={plotData}
         layout={trace.layout}
         size={{
           width: `${rnd.width - 10}px`,

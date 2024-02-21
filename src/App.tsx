@@ -4,6 +4,8 @@ import { PlotCollection } from './components/PlotCollection';
 import { PlotData } from './types/global';
 import { ThemeProvider, Typography, alpha, createTheme, getContrastRatio } from '@mui/material';
 
+import logo from "./logo.jpg";
+
 if (!navigator.serial) {
   alert('Please use chrome or edge');
 }
@@ -14,11 +16,14 @@ const grayMain = alpha(grayBase, 0.7);
 const blackBase = '#000000de';
 const blackMain = alpha(blackBase, 0.7);
 
-const plotCount = 6;
-
 const App = () => {
-  const [plotData, setPlotData] = useState<PlotData[]>(Array.from({length: plotCount}, () => [{x: [0.3, 2], y: [-1, 5.3]}] as unknown as PlotData));
-  // TODO: multiple plots
+
+  const [plotData, setPlotData] = useState<PlotData[][]>(Array.from({length: 6}, () => [{
+    x: [],
+    y: []
+  }] as unknown as PlotData[]));
+  // d1 - plot id
+  // d2 - PlotData[] item
 
   const theme = createTheme({
     palette: {
@@ -75,28 +80,40 @@ const App = () => {
   });
 
   const clearPlotData = () => {
-    setPlotData([]);
+    setPlotData(Array.from({length: 6}, () => [{
+      x: [],
+      y: []
+    }] as unknown as PlotData[]));
   };
 
-  const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean) => {
+  const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean, id: number = 0) => {
+    console.log(newData, id, shouldAddNew);
     if (shouldAddNew) {
+
       setPlotData((prev) => {
+        const next = [...prev];
+
+        let mod_plot_data = next[id];
+
+        mod_plot_data = [...mod_plot_data, {
+          x: [newData.x],
+          y: [newData.y],
+          name: `Measurement nr. ${prev.length + 1}: Voltage - Current`,
+          type: 'scatter',
+          mode: 'lines',
+        }];
+
+        next[id] = mod_plot_data;
+
         return [
-          ...prev,
-          {
-            x: [newData.x],
-            y: [newData.y],
-            name: `Measurement nr. ${prev.length + 1}: Voltage - Current`,
-            type: 'scatter',
-            mode: 'lines',
-          },
+          ...next
         ];
       });
     } else {
       setPlotData((prev) => {
         const next = [...prev];
-        next[next.length - 1].x.push(newData.x);
-        next[next.length - 1].y.push(newData.y);
+        next[id][next[id].length - 1].x.push(newData.x);
+        next[id][next[id].length - 1].y.push(newData.y);
         return [...next];
       });
     }
@@ -105,6 +122,11 @@ const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <header>
+        <img 
+          style={{
+            maxHeight: 50
+          }}
+          src={logo}/>
         <Typography
           variant="h5"
           component="h2"

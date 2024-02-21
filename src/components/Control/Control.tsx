@@ -9,7 +9,7 @@ import { PlotData } from '../../types/global';
 import { SerialSender } from '../SerialSender';
 
 type Props = {
-  updatePlotData: (newData: { x: number; y: number }, shouldAddNew: boolean) => void;
+  updatePlotData: (newData: { x: number; y: number }, shouldAddNew: boolean, id: number) => void;
   clearPlotData: () => void;
 };
 
@@ -33,7 +33,10 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
   const hashtagInLine = useRef(true);
   const searchForBEGIN = useRef(true);
   const streamData = useRef<string[]>([]);
-  const plotData = useRef<PlotData[]>([]);
+  const plotData = useRef<PlotData[][]>(Array.from({length: 6}, () => [{
+    x: [2, 3],
+    y: [2, 3]
+  }] as PlotData[]));
 
   const getConnectBtnName = () => {
     if (!connected) {
@@ -44,8 +47,6 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
   };
 
   const dataReceiveHandler = (msg: Uint8Array) => {
-    // TODO: rewrite this piece of shit to handle multiple plots at once
-    // god help me
     const receivedLine = new TextDecoder().decode(msg).replaceAll('\r', '');
 
     let checkIfAdd = false;
@@ -55,7 +56,6 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       (receivedLine.includes('#JOB DONE') || streamData.current[lastLineId].includes('#JOB DONE'))) {
       console.log("JOB DONE SIGNAL RECEIVED");
       setRunning(false);
-      // return;
     }
 
     if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('#E(V), I(uA)')) {
@@ -129,6 +129,9 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       let voltageData: number = 0;
       let currentData: number = 0;
 
+      // eslint-disable-next-line prefer-const
+      let newDataPoints: { x: number; y: number; }[] = [];
+
       splitMeasurementData.forEach((measurement) => {
         const splitMeasurement = measurement.split(': ');
         if (splitMeasurement[0].includes('Voltage')) {
@@ -137,34 +140,49 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
 
         if (splitMeasurement[0].includes('Current')) {
           currentData = parseFloat(splitMeasurement[1]);
+          newDataPoints.push({
+            x: voltageData,
+            y: currentData
+          });
         }
       });
 
+      console.log(newDataPoints, plotData.current);
+
       if (plotData.current.length === 0 || plotData.current.length === plotDataIndex.current) {
-        plotData.current[plotDataIndex.current] = {
-          x: [voltageData],
-          y: [currentData],
-          name: `Measurement nr. ${plotDataIndex.current + 1}: Voltage - Current`,
-          type: 'scatter',
-          mode: 'lines',
-        };
-        updatePlotData(
-          {
-            x: voltageData,
-            y: currentData,
-          },
-          true,
-        );
+        newDataPoints.forEach((el, id) => {
+        
+          plotData.current[id][plotDataIndex.current] = {
+            x: [el.x],
+            y: [el.y],
+            name: `Measurement nr. ${plotDataIndex.current + 1}: Voltage - Current`,
+            type: 'scatter',
+            mode: 'lines',
+          };
+
+          updatePlotData(
+            {
+              x: el.x,
+              y: el.y,
+            },
+            true,
+            id
+          );
+        });
       } else {
-        plotData.current[plotDataIndex.current].x.push(voltageData);
-        plotData.current[plotDataIndex.current].y.push(currentData);
-        updatePlotData(
-          {
-            x: voltageData,
-            y: currentData,
-          },
-          false,
-        );
+        newDataPoints.forEach((el, id) => {
+          console.log(plotData.current[id]);
+          plotData.current[id][plotDataIndex.current].x.push(voltageData);
+          plotData.current[id][plotDataIndex.current].y.push(currentData);
+          updatePlotData(
+            {
+              x: el.x,
+              y: el.y,
+            },
+            false,
+            id
+          );
+        });
       }
     }
   };
@@ -197,7 +215,11 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
 
   const onClearClick = () => {
     streamData.current = [];
-    plotData.current = [];
+    plotData.current = Array.from({length: 6}, () => [{
+      x: [],
+      y: []
+    }] as unknown as PlotData[])
+
     clearPlotData();
   };
 

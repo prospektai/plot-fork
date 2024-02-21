@@ -10,7 +10,7 @@ type Props = TraceData & {
     width: string;
     height: string;
   };
-  data: PlotData;
+  data: PlotData[];
 };
 
 const StreamPlot = ({ data, layout: propsLayout, size }: Props) => {
@@ -19,7 +19,7 @@ const StreamPlot = ({ data, layout: propsLayout, size }: Props) => {
   const [layout, setLayout] = useState<Partial<Layout>>({
     ...propsLayout,
     datarevision: revision,
-    // showlegend: true,
+    showlegend: false,
     legend: { x: 1, y: 0.5 },
     yaxis: { side: 'left' },
     yaxis2: { side: 'right', overlaying: 'y' },
@@ -27,8 +27,12 @@ const StreamPlot = ({ data, layout: propsLayout, size }: Props) => {
     autosize: true,
   });
 
+  // useEffect(() => {
+  //   console.log(data);
+  // }, [])
+
   useInterval(() => {
-    if (data.length > 0 && data[data.length - 1].y.length !== dataLen) {
+    if (data && data.length > 0 && data[data.length - 1].y.length !== dataLen) {
       const newRevision = revision + 1;
       setRevision(newRevision);
       setLayout({ ...layout, datarevision: newRevision });

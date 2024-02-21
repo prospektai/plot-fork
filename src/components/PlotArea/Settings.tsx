@@ -9,7 +9,7 @@ import { PlotData, TraceData } from '../../types/global';
 type AnchorType = (EventTarget & HTMLButtonElement) | null;
 
 type Props = {
-  plotData: PlotData;
+  plotData: PlotData[];
   labels: string[];
   trace: TraceData;
   setTrace: (value: React.SetStateAction<TraceData>) => void;

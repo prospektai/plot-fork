@@ -10,12 +10,11 @@ type ButtonPosType = {
 };
 
 type Props = {
-  dct: PlotData[];
+  dct: PlotData[][];
   labels: string[];
 };
 
-// const PlotCollection = ({ dct, labels: propsLabels }: Props) => {
-  const PlotCollection = ({ dct }: Props) => {
+const PlotCollection = ({ dct }: Props) => {
   const [plotIdx] = useState([0, 1, 2, 3, 4, 5]);
   const [labels,] = 
     useState<string[]>(['Current1', 'Current2', 'Current3', 'Current4', 'Current5', 'Current6']);
@@ -49,7 +48,7 @@ type Props = {
             <Grid item>
               <PlotArea 
                 key={idx} 
-                plotData={dct[_]} 
+                plotData={dct[_]}
                 title={labels[_]} 
                 labels={labels} 
                 position={{ x: xOff, y: yRoof }} 
