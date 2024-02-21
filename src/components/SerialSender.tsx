@@ -31,6 +31,13 @@ const SerialSender = (props: Props) => {
     props.setRunning(false);
   }
 
+  const onDummy = () => {
+    console.log('dummy');
+    props.sender('a');
+
+    props.setRunning(true);
+  }
+
   const methods = useForm({mode: "onSubmit"});
 
   return (
@@ -65,6 +72,11 @@ const SerialSender = (props: Props) => {
               Run
             </Button>
           }
+        </Grid>
+        <Grid item>
+          <Button key={'form-control-test'} variant="contained" onClick={onDummy} color="custom_gray" >
+            Dummy
+          </Button>
         </Grid>
       </form>
     </FormProvider>

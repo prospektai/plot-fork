@@ -47,7 +47,13 @@ type Props = {
           // console.log(xOff, yRoof);
           return (
             <Grid item>
-              <PlotArea key={idx} plotData={dct[_]} title={labels[_]} labels={labels} position={{ x: xOff, y: yRoof }} onDrag={handleDrag(idx)} />
+              <PlotArea 
+                key={idx} 
+                plotData={dct[_]} 
+                title={labels[_]} 
+                labels={labels} 
+                position={{ x: xOff, y: yRoof }} 
+                onDrag={handleDrag(idx)} />
             </Grid>
           );
         }

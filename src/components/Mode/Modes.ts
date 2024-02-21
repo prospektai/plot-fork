@@ -120,7 +120,7 @@ const buildSerialCommand = (mode: string, values: Record<string, string>) => {
   modeOptions.inputsProps.forEach((prop) => {
     const val = values[prop.label];
 
-    command += ` ${val}`;
+    command += ` "${val}"`;
   });
 
   return command;
