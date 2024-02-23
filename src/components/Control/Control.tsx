@@ -34,9 +34,9 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
   const searchForBEGIN = useRef(true);
   const streamData = useRef<string[]>([]);
   const plotData = useRef<PlotData[][]>(Array.from({length: 6}, () => [{
-    x: [2, 3],
-    y: [2, 3]
-  }] as PlotData[]));
+    x: [],
+    y: []
+  }] as unknown as PlotData[]));
 
   const getConnectBtnName = () => {
     if (!connected) {
@@ -64,18 +64,24 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
     }
 
     if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('BEGIN') && searchForBEGIN.current) {
-      plotDataIndex.current++;
+      // plotDataIndex.current++;
       searchForBEGIN.current = false;
     }
 
     if (streamData.current.length === 0) {
+      // First line in the stream
       streamData.current = [receivedLine];
     } else if (receivedLine.includes('\n')) {
+      // Received line contains end of last line and start
+      // of new line
       checkIfAdd = true;
       const splitReceivedLine = receivedLine.split('\n');
       const splitReceivedLineLastIndex = splitReceivedLine.length - 1;
 
+      // console.log(splitReceivedLine);
+
       splitReceivedLine.forEach((splitLine, index) => {
+
         if (streamData.current[lastLineId].includes('#E(V), I(uA)') || splitLine.includes('#E(V), I(uA)')) {
           hashtagInLine.current = false;
         }
@@ -88,14 +94,16 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           return;
         }
 
-        if (index === splitReceivedLineLastIndex && splitLine === '') {
-          streamData.current = [...streamData.current, ''];
+        if (index === splitReceivedLineLastIndex && splitLine === '') { 
+          // streamData.current = [...streamData.current, ''];
           return;
         }
 
         if (index === 0) {
+          // Handle case where this line is a new line
           const lastLine = streamData.current[lastLineId];
           const replaceLine = lastLine + splitLine;
+          // console.log({type: 'index === 0'}, replaceLine, lastLine, splitLine);
           streamData.current[lastLineId] = replaceLine;
           return;
         }
@@ -114,42 +122,77 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
         }
 
         if (splitLine !== '' && !hashtagInLine.current) {
+          // investigate here
           streamData.current = [...streamData.current, splitLine];
+          // lastLineId = streamData.current.length - 1;
           return;
         }
       });
     } else {
+      // Last line was cut-off, more to come
+
+      // console.log(receivedLine);
+      
       const lastLine = streamData.current[lastLineId];
       const replaceLine = lastLine + receivedLine;
       streamData.current[lastLineId] = replaceLine;
     }
 
     if (checkIfAdd && streamData.current.length > 2 && !streamData.current[streamData.current.length - 2].includes('#') && !streamData.current[lastLineId].includes('BEGIN')) {
-      const splitMeasurementData = streamData.current[lastLineId].split(', ');
+      // This gets run only if line contained newline
+
+      const bunchUpFlag = /.{2,}oltage/;
+      const currLine = streamData.current[lastLineId]
+      let unBunched = [];
+
+      if(bunchUpFlag.test(currLine)){
+        unBunched = currLine.split(/(?=Voltage:)/);
+
+        unBunched.forEach((line) => {
+          addNewPoints(line);
+          console.log('unbunched id', lastLineId, line);
+        });
+      }else{
+        addNewPoints(streamData.current[lastLineId]);
+      }
+    }
+  };
+
+  const addNewPoints = (currStreamData: string) => {
+    const splitMeasurementData = currStreamData.split(', ');
       let voltageData: number = 0;
       let currentData: number = 0;
 
       // eslint-disable-next-line prefer-const
       let newDataPoints: { x: number; y: number; }[] = [];
 
+      // console.log(currStreamData, splitMeasurementData.length);
+
       splitMeasurementData.forEach((measurement) => {
+
         const splitMeasurement = measurement.split(': ');
+
         if (splitMeasurement[0].includes('Voltage')) {
           voltageData = parseFloat(splitMeasurement[1]);
-        }
-
-        if (splitMeasurement[0].includes('Current')) {
+        }else if (splitMeasurement[0].includes('Current')) {
           currentData = parseFloat(splitMeasurement[1]);
           newDataPoints.push({
             x: voltageData,
             y: currentData
           });
+
+          if(splitMeasurement[1].includes('Voltage')){
+            // bunch up (should not happen)
+            // eslint-disable-next-line no-debugger
+            debugger;
+            throw new Error("bunch up exists");
+          }
         }
       });
 
-      console.log(newDataPoints, plotData.current);
-
       if (plotData.current.length === 0 || plotData.current.length === plotDataIndex.current) {
+
+        // newDataPoints can be random length 
         newDataPoints.forEach((el, id) => {
         
           plotData.current[id][plotDataIndex.current] = {
@@ -170,8 +213,14 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           );
         });
       } else {
+
         newDataPoints.forEach((el, id) => {
-          console.log(plotData.current[id]);
+
+          if(plotData.current[id] === undefined){
+            // eslint-disable-next-line no-debugger
+            debugger;
+          }
+
           plotData.current[id][plotDataIndex.current].x.push(voltageData);
           plotData.current[id][plotDataIndex.current].y.push(currentData);
           updatePlotData(
@@ -184,8 +233,7 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           );
         });
       }
-    }
-  };
+  }
 
   const onConnectClick = async () => {
     if (com?.connected) {

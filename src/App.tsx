@@ -87,7 +87,7 @@ const App = () => {
   };
 
   const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean, id: number = 0) => {
-    console.log(newData, id, shouldAddNew);
+    // console.log(newData, id, shouldAddNew);
     if (shouldAddNew) {
 
       setPlotData((prev) => {
