@@ -18,10 +18,15 @@ const blackMain = alpha(blackBase, 0.7);
 
 const App = () => {
 
+  // const [plotData, setPlotData] = useState<PlotData[][]>([]);
+
   const [plotData, setPlotData] = useState<PlotData[][]>(Array.from({length: 6}, () => [{
     x: [],
-    y: []
-  }] as unknown as PlotData[]));
+    y: [],
+    name: `0`,
+    type: 'scatter',
+    mode: 'lines',
+  }] as PlotData[]));
   // d1 - plot id
   // d2 - PlotData[] item
 
@@ -82,14 +87,16 @@ const App = () => {
   const clearPlotData = () => {
     setPlotData(Array.from({length: 6}, () => [{
       x: [],
-      y: []
-    }] as unknown as PlotData[]));
+      y: [],
+      name: `1`,
+      type: 'scatter',
+      mode: 'lines',
+    }] as PlotData[]));
   };
 
   const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean, id: number = 0) => {
-    // console.log(newData, id, shouldAddNew);
-    if (shouldAddNew) {
 
+    if (shouldAddNew) {
       setPlotData((prev) => {
         const next = [...prev];
 
@@ -98,11 +105,12 @@ const App = () => {
         mod_plot_data = [...mod_plot_data, {
           x: [newData.x],
           y: [newData.y],
-          name: `Measurement nr. ${prev.length + 1}: Voltage - Current`,
+          name: `${prev[0].length}`,
           type: 'scatter',
           mode: 'lines',
         }];
 
+        // console.log(mod_plot_data);
         next[id] = mod_plot_data;
 
         return [
@@ -112,6 +120,7 @@ const App = () => {
     } else {
       setPlotData((prev) => {
         const next = [...prev];
+        // debugger;
         next[id][next[id].length - 1].x.push(newData.x);
         next[id][next[id].length - 1].y.push(newData.y);
         return [...next];

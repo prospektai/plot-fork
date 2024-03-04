@@ -19,11 +19,11 @@ const StreamPlot = ({ data, layout: propsLayout, size }: Props) => {
   const [layout, setLayout] = useState<Partial<Layout>>({
     ...propsLayout,
     datarevision: revision,
-    showlegend: false,
-    legend: { x: 1, y: 0.5 },
+    showlegend: true,
+    legend: { orientation: "v", xanchor: "right" },
     yaxis: { side: 'left' },
     yaxis2: { side: 'right', overlaying: 'y' },
-    margin: { l: 30, b: 30, t: 30 },
+    margin: { l: 40, b: 20, t: 20, r: 10 },
     autosize: true,
   });
 
@@ -39,6 +39,12 @@ const StreamPlot = ({ data, layout: propsLayout, size }: Props) => {
       setDataLen(data[data.length - 1].y.length);
     }
   }, 60);
+
+  // useInterval(() => {
+  //   if (data && data.length > 0 && data[data.length - 1].y.length !== dataLen) {
+  //     console.log(data);
+  //   }
+  // }, 1500);
 
   return (
     <Plot

@@ -47,11 +47,18 @@ const PlotArea = ({ plotData, labels, position, onDrag, title }: Props) => {
         };
       });
     };
+  
 
     window.addEventListener('resize', updateWindowDimensions);
 
     return () => window.removeEventListener('resize', updateWindowDimensions);
   }, []);
+
+  // useInterval(() => {
+  //   if (plotData && plotData.length > 0) {
+  //     console.log(plotData);
+  //   }
+  // }, 2000);
 
   return (
     <Rnd
