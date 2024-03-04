@@ -23,7 +23,7 @@ const App = () => {
   const [plotData, setPlotData] = useState<PlotData[][]>(Array.from({length: 6}, () => [{
     x: [],
     y: [],
-    name: `0`,
+    name: `1`,
     type: 'scatter',
     mode: 'lines',
   }] as PlotData[]));
@@ -94,7 +94,7 @@ const App = () => {
     }] as PlotData[]));
   };
 
-  const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean, id: number = 0) => {
+  const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean, id: number = 0, plotDataIndex: number = 0) => {
 
     if (shouldAddNew) {
       setPlotData((prev) => {
@@ -105,12 +105,11 @@ const App = () => {
         mod_plot_data = [...mod_plot_data, {
           x: [newData.x],
           y: [newData.y],
-          name: `${prev[0].length}`,
+          name: `${plotDataIndex + 1}`,
           type: 'scatter',
           mode: 'lines',
         }];
 
-        // console.log(mod_plot_data);
         next[id] = mod_plot_data;
 
         return [
@@ -120,7 +119,7 @@ const App = () => {
     } else {
       setPlotData((prev) => {
         const next = [...prev];
-        // debugger;
+
         next[id][next[id].length - 1].x.push(newData.x);
         next[id][next[id].length - 1].y.push(newData.y);
         return [...next];

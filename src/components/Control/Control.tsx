@@ -9,7 +9,7 @@ import { PlotData } from '../../types/global';
 import { SerialSender } from '../SerialSender';
 
 type Props = {
-  updatePlotData: (newData: { x: number; y: number }, shouldAddNew: boolean, id: number) => void;
+  updatePlotData: (newData: { x: number; y: number }, shouldAddNew: boolean, id: number, plotDataIndex: number) => void;
   clearPlotData: () => void;
 };
 
@@ -31,7 +31,7 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
 
   const plotDataIndex = useRef(0);
   const hashtagInLine = useRef(true);
-  const searchForBEGIN = useRef(true);
+  // const searchForBEGIN = useRef(true);
   const addNewMeasurement = useRef(false);
   const streamData = useRef<string[]>([]);
   const plotData = useRef<PlotData[][]>(Array.from({length: 6}, () => [{
@@ -64,40 +64,18 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
 
     if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('#E(V), I(uA)')) {
       hashtagInLine.current = false;
-      searchForBEGIN.current = true;
+      // searchForBEGIN.current = true;
     }
 
     if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('BEGIN')) {
-      // console.log(streamData.current[lastLineId]);
       addNewMeasurement.current = true;
-      plotDataIndex.current++;
 
-      // console.log(plotDataIndex.current);
-      // console.log(plotData.current);
+      // console.log('Initial if case');
+    }
 
-      plotData.current.forEach((el) => {
-        el[plotDataIndex.current] = {
-          x: [],
-          y: [],
-          name: `${plotDataIndex.current}`,
-          type: 'scatter',
-          mode: 'lines'
-        }
-      });
-
-      // updatePlotData(
-      //   {
-      //     x: []
-      //     y: el.y,
-      //   },
-      //   true,
-      //   id
-      // );
-      // console.log(plotData.current[id]);
-      // console.log(streamData.current[lastLineId]);
-
-      // console.log(plotData.current);
-      searchForBEGIN.current = false;
+    if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('END')) {
+      // debugger;
+      addNewMeasurement.current = true;
     }
 
     if (streamData.current.length === 0) {
@@ -135,11 +113,9 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           // Handle case where this line is a new line
           const lastLine = streamData.current[lastLineId];
           const replaceLine = lastLine + splitLine;
-          if(replaceLine.includes('BEGIN')){
-            addNewMeasurement.current = true;
-          }
           // console.log({type: 'index === 0'}, replaceLine, lastLine, splitLine);
           streamData.current[lastLineId] = replaceLine;
+          if(streamData.current[lastLineId].includes('BEGIN')) addNewMeasurement.current = true;
           return;
         }
 
@@ -153,7 +129,7 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           const lastLine = streamData.current[lastLineId];
           const replaceLine = lastLine + splitLine;
           streamData.current[lastLineId] = replaceLine;
-          if(replaceLine.includes('BEGIN')) addNewMeasurement.current = true;
+          if(streamData.current[lastLineId].includes('BEGIN')) addNewMeasurement.current = true;
           return;
         }
 
@@ -166,13 +142,11 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       });
     } else {
       // Last line was cut-off, more to come
-
-      // console.log(receivedLine);
       
       const lastLine = streamData.current[lastLineId];
       const replaceLine = lastLine + receivedLine;
       streamData.current[lastLineId] = replaceLine;
-      if(replaceLine.includes('BEGIN')) addNewMeasurement.current = true;
+      if(streamData.current[lastLineId].includes('BEGIN')) addNewMeasurement.current = true;
     }
 
     if (checkIfAdd && streamData.current.length > 2 && !streamData.current[streamData.current.length - 2].includes('#') && !streamData.current[lastLineId].includes('BEGIN')) {
@@ -183,12 +157,10 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       let unBunched = [];
 
       if(bunchUpFlag.test(currLine)){
-        debugger;
         unBunched = currLine.split(/(?=Voltage:)/);
 
         unBunched.forEach((line) => {
           addNewPoints(line);
-          // console.log('unbunched id', lastLineId, line);
         });
       }else{
         addNewPoints(streamData.current[lastLineId]);
@@ -221,31 +193,39 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
 
           if(splitMeasurement[1].includes('Voltage')){
             // bunch up (should not happen)
-            // eslint-disable-next-line no-debugger
-            debugger;
             throw new Error("bunch up exists");
           }
         }
       });
 
-      // console.log(plotData.current[0].length, plotDataIndex.current);
-      if (addNewMeasurement.current) {
-        // debugger;
-        // console.log(addNewMeasurement);
+      // if(plotData.current[0][plotDataIndex.current].x.length > 206){
+      //   debugger;
+      // }
 
+      if(plotData.current[0][0].x.length === 0){
+        // ensure writing to first element
         addNewMeasurement.current = false;
-        // newDataPoints can be random length 
+      }
+
+      if (addNewMeasurement.current) {
+
+        plotDataIndex.current++;
+        // searchForBEGIN.current = false;
+        addNewMeasurement.current = false;
+        // note: newDataPoints can (should not) be random length 
+
         newDataPoints.forEach((el, id) => {
-        
-          plotData.current[id][plotDataIndex.current + 1] = {
+          // console.log('plotDataIndex.current', plotDataIndex.current);
+
+          plotData.current[id][plotDataIndex.current] = {
             x: [el.x],
             y: [el.y],
-            name: `${plotDataIndex.current}`,
+            name: `${plotDataIndex.current + 1}`,
             type: 'scatter',
             mode: 'lines',
           };
 
-          // debugger;
+          // console.log(plotData.current[id][plotDataIndex.current]);
 
           updatePlotData(
             {
@@ -253,17 +233,13 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
               y: el.y,
             },
             true,
-            id
+            id,
+            plotDataIndex.current
           );
         });
       } else {
 
         newDataPoints.forEach((el, id) => {
-
-          if(plotData.current[id] === undefined){
-            // eslint-disable-next-line no-debugger
-            debugger;
-          }
 
           plotData.current[id][plotDataIndex.current].x.push(voltageData);
           plotData.current[id][plotDataIndex.current].y.push(currentData);
@@ -274,10 +250,12 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
               y: el.y,
             },
             false,
-            id
+            id,
+            plotDataIndex.current
           );
         });
       }
+    // console.log(Object.values(plotData.current[0]), Object.values(plotData.current[4]));
   }
 
   const onConnectClick = async () => {
