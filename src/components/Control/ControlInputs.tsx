@@ -6,6 +6,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 type Props = {
   baudrate: string;
+  running: boolean;
   setBaudrate: React.Dispatch<React.SetStateAction<string>>;
   onConnectClick: () => Promise<void>;
   getConnectBtnName: () => 'Open' | 'Close';
@@ -51,6 +52,7 @@ const ControlInputs = (props: Props) => {
         <Button
           variant="contained"
           color="secondary"
+          disabled={props.running}
           onClick={() => {
             props.onClearClick();
           }}

@@ -11,7 +11,7 @@ type ButtonPosType = {
 
 type Props = {
   dct: PlotData[][];
-  labels: string[];
+  // labels: string[];
 };
 
 const PlotCollection = ({ dct }: Props) => {
@@ -27,7 +27,7 @@ const PlotCollection = ({ dct }: Props) => {
       setButtonPos(b);
     };
   };
-
+  
   let xOff = 80;
   let yRoof = 120;
 
@@ -45,9 +45,8 @@ const PlotCollection = ({ dct }: Props) => {
 
           // console.log(xOff, yRoof);
           return (
-            <Grid item>
+            <Grid key={idx} item>
               <PlotArea 
-                key={idx} 
                 plotData={dct[_]}
                 title={labels[_]} 
                 labels={labels} 

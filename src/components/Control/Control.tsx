@@ -21,6 +21,8 @@ const HelpTooltip = styled(Tooltip)(() => ({
   },
 }));
 
+// DRY, TODO: merge ref and state of app plotData into one source of truth
+
 const Control = ({ clearPlotData, updatePlotData }: Props) => {
   const [com, setCom] = useState<WebUsbComInterface | null>(null);
   const [baudrate, setBaudrate] = useState('9600');
@@ -31,7 +33,6 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
 
   const plotDataIndex = useRef(0);
   const hashtagInLine = useRef(true);
-  // const searchForBEGIN = useRef(true);
   const addNewMeasurement = useRef(false);
   const streamData = useRef<string[]>([]);
   const plotData = useRef<PlotData[][]>(Array.from({length: 6}, () => [{
@@ -50,45 +51,77 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
     }
   };
 
-  const dataReceiveHandler = (msg: Uint8Array) => {
-    const receivedLine = new TextDecoder().decode(msg).replaceAll('\r', '');
-
-    let checkIfAdd = false;
-    let lastLineId = streamData.current.length - 1;
-
-    if (streamData.current.length !== 0 && 
-        streamData.current[lastLineId].includes('#JOB DONE')) {
+  const evaluateStreamLine = (line: string) => {
+    if (line.includes('#JOB DONE')) {
       console.log("JOB DONE SIGNAL RECEIVED");
       setRunning(false);
     }
 
-    if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('#E(V), I(uA)')) {
+    if (line.includes('#E(V), I(uA)')) {
       hashtagInLine.current = false;
       // searchForBEGIN.current = true;
     }
 
-    if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('BEGIN')) {
+    if (line.includes('#MEASUREMENT BEGIN')) {
       addNewMeasurement.current = true;
 
       // console.log('Initial if case');
     }
 
-    if (streamData.current.length !== 0 && streamData.current[lastLineId].includes('END')) {
+    if (line.includes('#MEASUREMENT END')) {
       // debugger;
       addNewMeasurement.current = true;
     }
+  }
 
-    if (streamData.current.length === 0) {
+  const dataReceiveHandler = (msg: Uint8Array) => {
+    // Pre-condition: 
+    // msg is a Uint8Array containing the data fragment received
+    // from serial input.
+    // Post-condition:
+    // The received message has been fully processed;
+    // This means that:
+    //    1. No further predicates including the parameter msg: Uint8Array
+    //       are evaluated. I.e. the parameter data has been "absorbed" into
+    //       all relevant component states in the system, 
+    //       after which msg is discarded.
+    // 
+    // The function works in two main stages
+    //    1. Decode (split) parameter msg into elements Ai, i := |msg.split('\n')|
+    //       For each Ai: 
+    //          1.1. Set flags altering Ai data flow
+    //          1.2. Save data to current stream ref
+    //    2. Conditional state transition section
+    // 
+    // The data flow and conditional logic can be described as follows:
+    //    1. Flow control flags are fetched from streamData.current[lastLineId], 
+    //       streamData.current[lastLineId] := self + msg;
+    //       These flags 
+    //    2. Iff msg does not contain newline separator, 
+    //       streamData.current[lastLineId] := self + msg;
+    //    3. Iff msg does contain newline separator,
+    //       line is evaluated (as a newline indicates EOL)  
+    
+    const receivedLine = new TextDecoder().decode(msg).replaceAll('\r', '');
+
+    let checkIfAdd = false;
+    let lastLineId = streamData.current.length - 1;
+
+    // Set data flow flags
+    if(lastLineId > 0){
+      evaluateStreamLine(streamData.current[lastLineId]);
+    }
+
+    if (lastLineId === -1) {
       // First line in the stream
       streamData.current = [receivedLine];
+      evaluateStreamLine(streamData.current[0]);
     } else if (receivedLine.includes('\n')) {
       // Received line contains end of last line and start
       // of new line
       checkIfAdd = true;
       const splitReceivedLine = receivedLine.split('\n');
       const splitReceivedLineLastIndex = splitReceivedLine.length - 1;
-
-      // console.log(streamData.current[lastLineId]);
 
       splitReceivedLine.forEach((splitLine, index) => {
 
@@ -110,17 +143,20 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
         }
 
         if (index === 0) {
-          // Handle case where this line is a new line
+          // Handle first line (should usually be only one line)
           const lastLine = streamData.current[lastLineId];
           const replaceLine = lastLine + splitLine;
-          // console.log({type: 'index === 0'}, replaceLine, lastLine, splitLine);
+
           streamData.current[lastLineId] = replaceLine;
-          if(streamData.current[lastLineId].includes('BEGIN')) addNewMeasurement.current = true;
+          
+          evaluateStreamLine(streamData.current[lastLineId]);
           return;
         }
 
         if (splitLine[0] === '#') {
           streamData.current = [...streamData.current, splitLine];
+
+          evaluateStreamLine(streamData.current[streamData.current.length - 1]);
           return;
         }
 
@@ -129,32 +165,42 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
           const lastLine = streamData.current[lastLineId];
           const replaceLine = lastLine + splitLine;
           streamData.current[lastLineId] = replaceLine;
-          if(streamData.current[lastLineId].includes('BEGIN')) addNewMeasurement.current = true;
+          
+          evaluateStreamLine(streamData.current[lastLineId]);
           return;
         }
 
         if (splitLine !== '' && !hashtagInLine.current) {
-          // investigate here
           streamData.current = [...streamData.current, splitLine];
-          // lastLineId = streamData.current.length - 1;
+
+          evaluateStreamLine(streamData.current[streamData.current.length - 1]);
           return;
         }
       });
+
+
     } else {
       // Last line was cut-off, more to come
       
       const lastLine = streamData.current[lastLineId];
       const replaceLine = lastLine + receivedLine;
       streamData.current[lastLineId] = replaceLine;
-      if(streamData.current[lastLineId].includes('BEGIN')) addNewMeasurement.current = true;
+
+      evaluateStreamLine(streamData.current[lastLineId]);
     }
 
-    if (checkIfAdd && streamData.current.length > 2 && !streamData.current[streamData.current.length - 2].includes('#') && !streamData.current[lastLineId].includes('BEGIN')) {
+    if (checkIfAdd && !streamData.current[streamData.current.length - 2].includes('#') && !streamData.current[lastLineId].includes('BEGIN')) {
       // This gets run only if line contained newline
 
       const bunchUpFlag = /.{2,}oltage/;
       const currLine = streamData.current[lastLineId]
       let unBunched = [];
+
+      // @use debug
+      // if(streamData.current[lastLineId].includes('DONE')){
+      //   console.log(streamData.current);
+      //   debugger;
+      // }
 
       if(bunchUpFlag.test(currLine)){
         unBunched = currLine.split(/(?=Voltage:)/);
@@ -176,8 +222,6 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       // eslint-disable-next-line prefer-const
       let newDataPoints: { x: number; y: number; }[] = [];
 
-      // console.log(currStreamData, splitMeasurementData.length);
-
       splitMeasurementData.forEach((measurement) => {
 
         const splitMeasurement = measurement.split(': ');
@@ -191,10 +235,10 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
             y: currentData
           });
 
-          if(splitMeasurement[1].includes('Voltage')){
-            // bunch up (should not happen)
-            throw new Error("bunch up exists");
-          }
+          // if(splitMeasurement[1].includes('Voltage')){
+          //   // bunch up (should not happen)
+          //   throw new Error("bunch up exists");
+          // }
         }
       });
 
@@ -210,12 +254,10 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       if (addNewMeasurement.current) {
 
         plotDataIndex.current++;
-        // searchForBEGIN.current = false;
         addNewMeasurement.current = false;
         // note: newDataPoints can (should not) be random length 
 
         newDataPoints.forEach((el, id) => {
-          // console.log('plotDataIndex.current', plotDataIndex.current);
 
           plotData.current[id][plotDataIndex.current] = {
             x: [el.x],
@@ -224,8 +266,6 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
             type: 'scatter',
             mode: 'lines',
           };
-
-          // console.log(plotData.current[id][plotDataIndex.current]);
 
           updatePlotData(
             {
@@ -239,11 +279,14 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
         });
       } else {
 
+        // console.log(plotDataIndex.current);
         newDataPoints.forEach((el, id) => {
+
+          // if(plotData.current[id][plotDataIndex.current] === undefined) debugger;
 
           plotData.current[id][plotDataIndex.current].x.push(voltageData);
           plotData.current[id][plotDataIndex.current].y.push(currentData);
-          // console.log(plotData.current[id][plotDataIndex.current]);
+
           updatePlotData(
             {
               x: el.x,
@@ -291,9 +334,14 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       y: [],
       name: `1`,
       type: 'scatter',
-      mode: 'lines'
-    }] as PlotData[])
+      mode: 'lines',
+    }] as PlotData[]);
 
+    // Local state
+    plotDataIndex.current = 0;
+    addNewMeasurement.current = false;
+
+    // Parent state
     clearPlotData();
   };
 
@@ -378,7 +426,7 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
     <div>
       <Grid style={{ width: '650px' }} container spacing={1}>
         <Grid item xs={10}>
-          <ControlInputs baudrate={baudrate} getConnectBtnName={getConnectBtnName} onClearClick={onClearClick} onConnectClick={onConnectClick} onSaveClick={onSaveClick} setBaudrate={setBaudrate} />
+          <ControlInputs baudrate={baudrate} running={running} getConnectBtnName={getConnectBtnName} onClearClick={onClearClick} onConnectClick={onConnectClick} onSaveClick={onSaveClick} setBaudrate={setBaudrate} />
         </Grid>
         <Grid item xs={1}>
           <HelpTooltip

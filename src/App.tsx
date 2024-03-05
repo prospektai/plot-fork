@@ -18,8 +18,6 @@ const blackMain = alpha(blackBase, 0.7);
 
 const App = () => {
 
-  // const [plotData, setPlotData] = useState<PlotData[][]>([]);
-
   const [plotData, setPlotData] = useState<PlotData[][]>(Array.from({length: 6}, () => [{
     x: [],
     y: [],
@@ -84,7 +82,7 @@ const App = () => {
     },
   });
 
-  const clearPlotData = () => {
+  const clearPlotData = () => { 
     setPlotData(Array.from({length: 6}, () => [{
       x: [],
       y: [],
@@ -92,7 +90,7 @@ const App = () => {
       type: 'scatter',
       mode: 'lines',
     }] as PlotData[]));
-  };
+  }
 
   const updatePlotDate = (newData: { x: number; y: number }, shouldAddNew: boolean, id: number = 0, plotDataIndex: number = 0) => {
 
@@ -148,7 +146,7 @@ const App = () => {
         </Typography>
       </header>
       <Control clearPlotData={clearPlotData} updatePlotData={updatePlotDate} />
-      <PlotCollection dct={plotData} labels={[]} />
+      <PlotCollection dct={plotData}/>
     </ThemeProvider>
   );
 };
