@@ -305,6 +305,8 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
     if (com?.connected) {
       await com.close();
       setCom(com);
+      setRunning(false);
+      setConnected(false);
     } else {
       const newCom = baudrate === 'raw_hid' ? new WebRawHID() : new WebSerial();
 
@@ -317,6 +319,13 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       newCom.setReceiveCallback((msg: Uint8Array) => {
         dataReceiveHandler(msg);
       });
+
+      if(baudrate !== 'raw_hid'){ // TODO: refactor
+        (newCom as WebSerial).setErrorCallback(() => {
+          setRunning(false);
+          setConnected(false);
+        });
+      }
 
       await newCom.open(
         () => {
@@ -442,6 +451,7 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
       </Grid>
       <SerialSender
         running={running}
+        isConnected={connected}
         setRunning={setRunning}
         sender={async (value: string) => {
           await com?.writeString(value.concat('\n'));

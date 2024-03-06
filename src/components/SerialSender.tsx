@@ -8,6 +8,7 @@ import { Start, Stop } from '@mui/icons-material';
 type Props = {
   running: boolean,
   setRunning: React.Dispatch<React.SetStateAction<boolean>>,
+  isConnected: boolean,
   sender: (arg: string) => void
 };
 
@@ -53,7 +54,7 @@ const SerialSender = (props: Props) => {
             </Select>
           </FormControl>
 
-          <ModeInputs key={mode} mode={mode} running={props.running} />
+          <ModeInputs key={mode} mode={mode} running={props.running && !props.isConnected} />
         </Grid>
         <Grid item>
           {props.running ?
@@ -61,7 +62,7 @@ const SerialSender = (props: Props) => {
               Stop
             </Button>
               :
-            <Button key={'form-control-run'} variant="contained" type='submit' color="custom_gray" startIcon={<Start />}>
+            <Button key={'form-control-run'} variant="contained" type='submit' color="custom_gray" startIcon={<Start />} disabled={!props.isConnected}>
               Run
             </Button>
           }

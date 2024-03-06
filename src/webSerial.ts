@@ -18,7 +18,7 @@ class WebSerial implements WebUsbComInterface {
   private _connected: boolean = false;
 
   get connected() {
-    return this._connected;
+    return this._connected && this.writable !== null;
   }
 
   constructor(
@@ -112,9 +112,29 @@ class WebSerial implements WebUsbComInterface {
   }
 
   async write(msg: Uint8Array) {
-    if (this.writable == null) {
-      console.error('Serial write is unavailable');
-      return;
+    if (this.writable === null) {
+      console.info('Serial write is unavailable');
+      console.info('Attempting to wait for serial write...');
+      const attemptCount = 3;
+
+      for(let i = 0; i < attemptCount; i++){  
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          let out = `Timeout #${i + 1}`;
+
+          if(this.writable === null){
+            out += ' failed';
+            console.log(out);
+          }else{
+            out += ' succeeded';
+            console.log(out);
+            break;
+          }
+      }
+
+      if(this.writable === null){
+        console.error(`Made ${attemptCount} attempts, failed to get serial write handle`)
+        return;
+      }
     }
 
     const writer = this.writable.getWriter();
