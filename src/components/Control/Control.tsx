@@ -358,30 +358,38 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
     let wereColumnsIncluded = false;
 
     const endOfMeasurementStrings = ['#', 'END'];
+    const commentString = ['#'];
     const commentsWithCommaStrings = ['#', ','];
     const measurementLineStrings = ['Current', 'Voltage'];
 
     const csv = streamData.current
       .map((streamLine) => {
         const isEndOfMeasurement = endOfMeasurementStrings.every((substring) => streamLine.includes(substring));
+        const isComment = commentString.every((substring) => streamLine.includes(substring));
         const isCommentsWithComma = commentsWithCommaStrings.every((substring) => streamLine.includes(substring));
         const isMeasurementLine = measurementLineStrings.some((substring) => streamLine.includes(substring)) && !streamLine.includes('#');
+
+        let returnStr = "";
+        let discardLineFlag = false;
 
         if (isEndOfMeasurement) {
           // Reset for next measurement
           wereColumnsIncluded = false;
         }
 
-        if (isCommentsWithComma) {
-          // Prevent commas in comments from seperating content
-          return `"${streamLine}"`;
-        }
+        if(isComment){
+          // Handles incomplete lines being added
+          const tmp = streamLine.split('#')
 
-        if (isMeasurementLine && !wereColumnsIncluded) {
+          if(tmp.length > 1) returnStr = `#${tmp[1]}`;
+        }else if (isCommentsWithComma) {
+          // Prevent commas in comments from seperating content
+          returnStr =  `${streamLine}`;
+        }else if (isMeasurementLine && !wereColumnsIncluded) {
           // Since no columns are present, create columns and add data below
           wereColumnsIncluded = true;
 
-          const seperateMeasurements = streamLine.split(', ');
+          let seperateMeasurements = streamLine.split(', ');
           let header = '';
           let data = '';
 
@@ -391,23 +399,34 @@ const Control = ({ clearPlotData, updatePlotData }: Props) => {
             data = data.length === 0 ? splitColumnsAndValues[1] : `${data}, ${splitColumnsAndValues[1]}`;
           });
 
-          return `${header}\n${data}`;
-        }
-
-        if (isMeasurementLine && wereColumnsIncluded) {
+          returnStr = `#${header}\n${data}`;
+        }else if (isMeasurementLine && wereColumnsIncluded) {
           // Parse data and add it
           const seperateMeasurements = streamLine.split(', ');
           let data = '';
 
           seperateMeasurements.forEach((measurement) => {
+            if(discardLineFlag) return;
+            
             const splitColumnsAndValues = measurement.split(': ');
             data = data.length === 0 ? splitColumnsAndValues[1] : `${data}, ${splitColumnsAndValues[1]}`;
+            
+            if(isNaN(Number(splitColumnsAndValues[1]))){
+              // If line contains NaN value, we can discard it
+              discardLineFlag = true;
+            }
           });
 
-          return `${data}`;
+          returnStr = `${data}`;
         }
 
+        if(discardLineFlag) return;
+
         // Simply add the comment line
+        if(returnStr.length > 0){
+          return returnStr;
+        }
+        
         return streamLine;
       })
       .join('\n');
